@@ -1,5 +1,8 @@
+import subprocess
 from database import initialize_db
 from tracker import add_transaction, view_transactions, delete_transaction, monthly_summary
+from detector import run_detection
+from alerts import send_all_alerts
 
 def main():
     initialize_db()
@@ -10,7 +13,9 @@ def main():
         print("2. View all transactions")
         print("3. Delete a transaction")
         print("4. Monthly summary")
-        print("5. Exit")
+        print("5. Run detection & send alerts")
+        print("6. Open dashboard")
+        print("7. Exit")
 
         choice = input("Enter your choice: ")
 
@@ -32,6 +37,24 @@ def main():
             monthly_summary()
 
         elif choice == "5":
+            print("\Running detection...")
+            results = run_detection()
+            if not results:
+                print("No price changes detected.")
+            else:
+                print(f"{len(results)} price change(s) detected:")
+                for r in results:
+                    print(f"  {r['merchant']}: ${r['baseline']:.2f} → ${r['latest']:.2f}")
+                recipient = input("\nEnter your email to receive alerts: ")
+                confirm = input(f"Send alerts to {recipient}? (y/n): ")
+                if confirm.lower() == "y":
+                    send_all_alerts(results, recipient=recipient)
+
+        elif choice == "6":
+            print("\nLaunching dashboard — press Ctrl+C here to stop it.")
+            subprocess.run(["streamlit", "run", "dashboard.py"])
+
+        elif choice == "7":
             print("Goodbye!")
             break
 
